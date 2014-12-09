@@ -44,7 +44,7 @@ trim: $(TRIMDIR)
 
 spades: $(SPADESDIR)
 	for f in $$(find $(TRIMDIR) -type f \( -name '*1_sequence.fq.gz' -o -name '*2_sequence.fq.gz' \)|sed 's/_[1-2]_sequence/_sequence/g'|sort|uniq -d); do \
-	  $(SPADES) --only-assembler --careful –t $(SPADESTHREADS) -1 $$(echo $$f|sed 's/_sequence/_1_sequence/g') –2 $$(echo $$f|sed 's/_sequence/_2_sequence/g') –o $(SPADESDIR)/$$(basename $$f); \
+	  $(SPADES) --only-assembler --careful –t $(SPADESTHREADS) -1 $$(echo $$f|sed 's/_sequence/_1_sequence/g') –2 $$(echo $$f|sed 's/_sequence/_2_sequence/g') –o $(SPADESDIR)/$$(basename $$f .fq.gz); \
 	done
 
 masurca: $(MASURCADIR)
