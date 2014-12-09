@@ -21,7 +21,7 @@ trim: $(TRIMDIR)
 	  interleave_pairs $$(echo $$f|sed 's/_sequence/_1_sequence/g') $$(echo $$f|sed 's/_sequence/_2_sequence/g') | \
 	  trim_edges -l 9 --paired_reads | \
 	  trim_quality -q 20 -w 5 --paired_reads | \
-	  deinterleave_pairs -z -o $(TRIMDIR)/$$(basename $$f|sed 's/_sequence.txt.gz/_1_sequence.fq.gz/g') $(TRIMDIR)/$$(basename $$f|sed 's/_sequence/_2_sequence.fq.gz/g'); \
+	  deinterleave_pairs -z -o $(TRIMDIR)/$$(basename $$f|sed 's/_sequence.txt.gz/_1_sequence.fq.gz/g') $(TRIMDIR)/$$(basename $$f|sed 's/_sequence.txt.gz/_2_sequence.fq.gz/g'); \
 	done
 
 .PHONY: fastqc interleave
