@@ -44,7 +44,7 @@ trim: $(TRIMDIR)
 
 spades: $(SPADESDIR)
 	for f in $$(find $(TRIMDIR) -type f \( -name '*1_sequence.fq.gz' -o -name '*2_sequence.fq.gz' \)|sed 's/_[1-2]_sequence/_sequence/g'|sort|uniq -d); do \
-	  $(SPADES) --only-assembler --careful –t $(SPADESTHREADS) -1 $$(echo $$f|sed 's/_sequence/_1_sequence/g') –2 $$(echo $$f|sed 's/_sequence/_2_sequence/g') –o $(SPADESDIR)/$$(basename $$f .fq.gz); \
+	  $(SPADES) --only-assembler --careful -t $(SPADESTHREADS) -1 $$(echo $$f|sed 's/_sequence/_1_sequence/g') -2 $$(echo $$f|sed 's/_sequence/_2_sequence/g') -o $(SPADESDIR)/$$(basename $$f .fq.gz); \
 	done
 
 masurca: $(MASURCADIR)
@@ -55,8 +55,10 @@ masurca: $(MASURCADIR)
 	  echo -e "NUM_THREADS = $(MASURCATHREADS)\nJF_SIZE = 2000000000\nEND" >> $(MASURCADIR)/$$(basename $$f)/config.txt; \
 	done
 	for f in $$(find $(TRIMDIR) -type f \( -name '*1_sequence.fq.gz' -o -name '*2_sequence.fq.gz' \)|sed 's/_[1-2]_sequence/_sequence/g'|sort|uniq -d); do \
-	  $(MASURCA) $(MASURCADIR)/$$(basename $$f)/config.txt; \
+	  cd $(MASURCADIR)/$$(basename $$f); \
+	  $(MASURCA) config.txt; \
 	  bash assemble.sh; \
+	  cd $(CURDIR); \
 	done
 
 .PHONY: fastqc interleave spades masurca
