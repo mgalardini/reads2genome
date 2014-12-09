@@ -15,15 +15,15 @@ TRIMDIR = $(CURDIR)/trimmed
 $(TRIMDIR):
 	mkdir -p $(TRIMDIR)
 
-ASSEMBLYDIR: $(CURDIR)/assembly
+ASSEMBLYDIR = $(CURDIR)/assembly
 $(ASSEMBLYDIR):
 	mkdir -p $(ASSEMBLYDIR)
 
-SPADESDIR: $(CURDIR)/spades
+SPADESDIR = $(CURDIR)/spades
 $(SPADESDIR):
 	mkdir -p $(SPADESDIR)
 
-MASURCADIR: $(CURDIR)/masurca
+MASURCADIR = $(CURDIR)/masurca
 $(MASURCADIR):
 	mkdir -p $(MASURCADIR)
 
@@ -49,13 +49,13 @@ spades: $(SPADESDIR)
 
 masurca: $(MASURCADIR)
 	for f in $$(find $(TRIMDIR) -type f \( -name '*1_sequence.fq.gz' -o -name '*2_sequence.fq.gz' \)|sed 's/_[1-2]_sequence/_sequence/g'|sort|uniq -d); do \
-	  mkdir -p $(MASURCADIR)/$$f; \
-	  echo -e "DATA\nPE= pe $(INSERTSIZEMEAN) $(INSERTSIZESTD) $$(echo $$f|sed 's/_sequence/_1_sequence/g') $$(echo $$f|sed 's/_sequence/_2_sequence/g')" > $(MASURCADIR)/$$f/config.txt; \
-	  echo -e "PARAMETERS\nGRAPH_KMER_SIZE = auto\nUSE_LINKING_MATES = 1\nCA_PARAMETERS = cgwErrorRate=0.25 ovlMemory=4GB\nKMER_COUNT_THRESHOLD = 2" >> $(MASURCADIR)/$$f/config.txt; \
-	  echo -e "NUM_THREADS = $(MASURCATHREADS)\nJF_SIZE = 2000000000\nEND" >> $(MASURCADIR)/$$f/config.txt; \
+	  mkdir -p $(MASURCADIR)/$$(basename $$f); \
+	  echo -e "DATA\nPE= pe $(INSERTSIZEMEAN) $(INSERTSIZESTD) $$(echo $$f|sed 's/_sequence/_1_sequence/g') $$(echo $$f|sed 's/_sequence/_2_sequence/g')" > $(MASURCADIR)/$$(basename $$f)/config.txt; \
+	  echo -e "PARAMETERS\nGRAPH_KMER_SIZE = auto\nUSE_LINKING_MATES = 1\nCA_PARAMETERS = cgwErrorRate=0.25 ovlMemory=4GB\nKMER_COUNT_THRESHOLD = 2" >> $(MASURCADIR)/$$(basename $$f)/config.txt; \
+	  echo -e "NUM_THREADS = $(MASURCATHREADS)\nJF_SIZE = 2000000000\nEND" >> $(MASURCADIR)/$$(basename $$f)/config.txt; \
 	done
 	for f in $$(find $(TRIMDIR) -type f \( -name '*1_sequence.fq.gz' -o -name '*2_sequence.fq.gz' \)|sed 's/_[1-2]_sequence/_sequence/g'|sort|uniq -d); do \
-	  $(MASURCA) $(MASURCADIR)/$$f/config.txt; \
+	  $(MASURCA) $(MASURCADIR)/$$(basename $$f)/config.txt; \
 	  bash assemble.sh; \
 	done
 
