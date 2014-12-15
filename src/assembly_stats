@@ -19,6 +19,8 @@ def get_options():
 
     parser.add_argument('contigs', action='store',
                         help='Contigs FASTA file')
+    parser.add_argument('strain', action='store',
+                        help='Strain ID')
     
     parser.add_argument('-N', action='store',
                         dest='split',
@@ -67,7 +69,7 @@ if __name__ == "__main__":
     from Bio import SeqIO
     from Bio.SeqUtils import GC
 
-    print('\t'.join(['Reads length',
+    print('\t'.join(['ID', 'Reads length',
                      'Coverage',
                      'Contigs',
                      'Length',
@@ -90,7 +92,7 @@ if __name__ == "__main__":
     else:
         coverage = float(options.sequencing)/sum([len(s) for s in seqs])
 
-    print('\t'.join([str(x) for x in [
+    print('\t'.join([str(x) for x in [options.strain,
                     options.sequencing,
                     coverage,
                     len(seqs),
