@@ -2,6 +2,7 @@ FASTQC = ../FastQC/fastqc
 READSDIR = ../2014-12-03-H15DLBGXX 
 SPADES = ~/nfs/marco/software/SPAdes-3.1.1-Linux/bin/spades.py
 SPADESTHREADS = 16
+SPADESKMERS = 21,33,55,77,99,127
 MASURCA = ~/nfs/marco/software/MaSuRCA-2.3.2/masurca
 MASURCATHREADS = 16
 INSERTSIZEMEAN = 390 
