@@ -18,8 +18,7 @@ def get_options():
                                      prog = 'assembly_stats')
 
     parser.add_argument('contigs', action='store',
-                        type=argparse.FileType('rb'),
-                        help='Contigs FASTA stream or file ("-" for STDIN)')
+                        help='Contigs FASTA file')
     
     parser.add_argument('-N', action='store',
                         dest='split',

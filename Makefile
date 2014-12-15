@@ -60,10 +60,10 @@ spades: $(SPADESDIR) $(CONTIGSDIR) $(CONTIGSSTATSDIR)
 	  cat $(SPADESDIR)/$$(basename $$f .fq.gz)/contigs.fasta | \
 	  $(SRCDIR)/filter_contigs --length 1000 - | \
 	  $(SRCDIR)/rename_contigs --prefix contigs_ - > $(CONTIGSDIR)/$$(basename $$f .fq.gz)/contigs.fna; \
-	  $(SRCDIR)/assembly_stats $(CONTIGSDIR)/$$(basename $$f .fq.gz)/contigs.fna $$(interleave_pairs $$(echo $$f|sed 's/_sequence/_1_sequence/g') $$(echo $$f|sed 's/_sequence/_2_sequence/g') | count_seqs | awk '{print $2}') > $(CONTIGSSTATSDIR)/$$(basename $$f .fq.gz).tsv;\
+	  $(SRCDIR)/assembly_stats $(CONTIGSDIR)/$$(basename $$f .fq.gz)/contigs.fna $$(interleave_pairs $$(echo $$f|sed 's/_sequence/_1_sequence/g') $$(echo $$f|sed 's/_sequence/_2_sequence/g') | count_seqs | awk '{print $$2}') > $(CONTIGSSTATSDIR)/$$(basename $$f .fq.gz).tsv;\
 	done
 
-masurca: $(MASURCADIR) $(CONTIGSDIR)
+masurca: $(MASURCADIR) $(CONTIGSDIR) $(CONTIGSSTATSDIR)
 	for f in $$(find $(TRIMDIR) -type f \( -name '*1_sequence.fq.gz' -o -name '*2_sequence.fq.gz' \)|sed 's/_[1-2]_sequence/_sequence/g'|sort|uniq -d); do \
 	  mkdir -p $(MASURCADIR)/$$(basename $$f .fq.gz); \
 	  echo -e "DATA\nPE= pe $(INSERTSIZEMEAN) $(INSERTSIZESTD) $$(echo $$f|sed 's/_sequence/_1_sequence/g') $$(echo $$f|sed 's/_sequence/_2_sequence/g')\nEND" > $(MASURCADIR)/$$(basename $$f .fq.gz)/config.txt; \
@@ -76,5 +76,12 @@ masurca: $(MASURCADIR) $(CONTIGSDIR)
 	  bash assemble.sh; \
 	  cd $(CURDIR); \
 	done
-
+	for f in $$(find $(TRIMDIR) -type f \( -name '*1_sequence.fq.gz' -o -name '*2_sequence.fq.gz' \)|sed 's/_[1-2]_sequence/_sequence/g'|sort|uniq -d); do \
+	  mkdir -p $(CONTIGSDIR)/$$(basename $$f .fq.gz); \
+	  cat $(MASURCADIR)/$$(basename $$f .fq.gz)/CA/10-gapclose/genome.ctg.fasta | \
+	  $(SRCDIR)/filter_contigs --length 1000 - | \
+	  $(SRCDIR)/rename_contigs --prefix contigs_ - > $(CONTIGSDIR)/$$(basename $$f .fq.gz)/contigs.fna; \
+	  $(SRCDIR)/assembly_stats $(CONTIGSDIR)/$$(basename $$f .fq.gz)/contigs.fna $$(interleave_pairs $$(echo $$f|sed 's/_sequence/_1_sequence/g') $$(echo $$f|sed 's/_sequence/_2_sequence/g') | count_seqs | awk '{print $$2}') > $(CONTIGSSTATSDIR)/$$(basename $$f .fq.gz).tsv;\
+	done
+        
 .PHONY: fastqc interleave spades masurca
