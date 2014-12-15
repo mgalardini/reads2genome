@@ -1,0 +1,103 @@
+#!/usr/bin/env python
+'''
+Outputs some statistics on contig sequences
+'''
+
+__author__ = "Marco Galardini"
+__version__ = '0.1.0'
+
+def get_options():
+    import argparse
+    import sys
+
+    import numpy as np
+
+    # create the top-level parser
+    description = "Output some statistics from a contigs FASTA file"
+    parser = argparse.ArgumentParser(description = description,
+                                     prog = 'assembly_stats')
+
+    parser.add_argument('contigs', action='store',
+                        type=argparse.FileType('rb'),
+                        help='Contigs FASTA stream or file ("-" for STDIN)')
+    
+    parser.add_argument('-N', action='store',
+                        dest='split',
+                        type=int,
+                        default=100,
+                        help='Split scaffolds if they have more than x consecutive N [Default: 100]')    
+    parser.add_argument('--sequencing', action='store',
+                        dest='sequencing',
+                        type=int,
+                        default=np.nan,
+                        help='Sequencing length')
+
+    parser.add_argument('--version', action='version',
+                         version='%(prog)s '+__version__)
+
+    return parser.parse_args()
+
+def N50(numlist):
+    """
+    Abstract: Returns the N50 value of the passed list of numbers.
+    Usage:    N50(numlist)
+
+    Based on the Broad Institute definition:
+    https://www.broad.harvard.edu/crd/wiki/index.php/N50
+    """
+    numlist.sort()
+    newlist = []
+    for x in numlist :
+        newlist += [x]*x
+        # take the mean of the two middle elements af there are an even number
+        # of elements.  otherwise, take the middle element
+    if len(newlist) % 2 == 0:
+        medianpos = int(len(newlist)/2)
+        return float(newlist[medianpos] + newlist[medianpos-1]) /2
+    else:
+        medianpos = int(len(newlist)/2)
+        return newlist[medianpos]
+
+if __name__ == "__main__":
+    options = get_options()
+
+    import sys
+
+    import numpy as np
+
+    from Bio import SeqIO
+    from Bio.SeqUtils import GC
+
+    print('\t'.join(['Reads length',
+                     'Coverage',
+                     'Contigs',
+                     'Length',
+                     'Largest contig',
+                     'N50',
+                     'GC',
+                     'Ns']))
+
+    seqs = {s for s in SeqIO.parse(options.contigs, 'fasta')}
+
+    s1 = None
+    for s in seqs:
+        if s1 is None:
+            s1 = s
+        else:
+            s1 += s
+
+    if np.isnan(options.sequencing):
+        coverage = np.nan
+    else:
+        coverage = float(options.sequencing)/sum([len(s) for s in seqs])
+
+    print('\t'.join([str(x) for x in [
+                    options.sequencing,
+                    coverage,
+                    len(seqs),
+                    len(s1),
+                    max({len(s) for s in seqs}),
+                    N50([len(s) for s in seqs]),
+                    GC(s1.seq),
+                    s1.seq.count('N')]]))
+    

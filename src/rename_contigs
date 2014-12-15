@@ -1,0 +1,43 @@
+#!/usr/bin/env python
+'''
+Renames the sequence of a fasta file
+'''
+
+__author__ = "Marco Galardini"
+__version__ = '0.1.0'
+
+def get_options():
+    import argparse
+    import sys
+
+    # create the top-level parser
+    description = "Renames the sequence of a fasta file"
+    parser = argparse.ArgumentParser(description = description,
+                                     prog = 'rename_contigs')
+
+    parser.add_argument('contigs', action='store',
+                        type=argparse.FileType('rb'),
+                        help='Contigs FASTA stream or file ("-" for STDIN)')
+    parser.add_argument('--prefix', action='store',
+                        dest='prefix',
+                        default='contig_',
+                        help='Contigs prefix [Default: contig_XX]')
+
+    parser.add_argument('--version', action='version',
+                         version='%(prog)s '+__version__)
+
+    return parser.parse_args()
+
+if __name__ == "__main__":
+    options = get_options()
+
+    import sys
+    from Bio import SeqIO
+
+    i = 0
+    for s in SeqIO.parse(options.contigs, 'fasta'):
+        i += 1
+        s.description = ''
+        s.id = '%s%04d'%(options.prefix, i)
+        SeqIO.write(s, sys.stdout, 'fasta')
+

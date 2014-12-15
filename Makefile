@@ -7,6 +7,8 @@ MASURCATHREADS = 16
 INSERTSIZEMEAN = 390 
 INSERTSIZESTD = 59
 
+SRCDIR = $(CURDIR)/src
+
 QCDIR = $(CURDIR)/QC
 $(QCDIR):
 	mkdir -p $(QCDIR)
@@ -27,6 +29,14 @@ MASURCADIR = $(CURDIR)/masurca
 $(MASURCADIR):
 	mkdir -p $(MASURCADIR)
 
+CONTIGSDIR = $(CURDIR)/contigs
+$(CONTIGSDIR):
+	mkdir -p $(CONTIGSDIR)
+
+CONTIGSSTATSDIR = $(CURDIR)/contigs-stats
+$(CONTIGSSTATSDIR):
+	mkdir -p $(CONTIGSSTATSDIR)
+
 READS = $(shell find $(READSDIR) -name '*.txt.gz')
 
 fastqc: $(QCDIR)
@@ -42,12 +52,17 @@ trim: $(TRIMDIR)
 	  deinterleave_pairs -z -o $(TRIMDIR)/$$(basename $$f|sed 's/_sequence.txt.gz/_1_sequence.fq.gz/g') $(TRIMDIR)/$$(basename $$f|sed 's/_sequence.txt.gz/_2_sequence.fq.gz/g'); \
 	done
 
-spades: $(SPADESDIR)
+spades: $(SPADESDIR) $(CONTIGSDIR) $(CONTIGSSTATSDIR)
 	for f in $$(find $(TRIMDIR) -type f \( -name '*1_sequence.fq.gz' -o -name '*2_sequence.fq.gz' \)|sed 's/_[1-2]_sequence/_sequence/g'|sort|uniq -d); do \
-	  $(SPADES) --only-assembler --careful -t $(SPADESTHREADS) -1 $$(echo $$f|sed 's/_sequence/_1_sequence/g') -2 $$(echo $$f|sed 's/_sequence/_2_sequence/g') -o $(SPADESDIR)/$$(basename $$f .fq.gz); \
+	  $(SPADES) -k $(SPADESKMERS) --only-assembler --careful -t $(SPADESTHREADS) -1 $$(echo $$f|sed 's/_sequence/_1_sequence/g') -2 $$(echo $$f|sed 's/_sequence/_2_sequence/g') -o $(SPADESDIR)/$$(basename $$f .fq.gz); \
+	  mkdir -p $(CONTIGSDIR)/$$(basename $$f .fq.gz); \
+	  cat $(SPADESDIR)/$$(basename $$f .fq.gz)/contigs.fasta | \
+	  $(SRCDIR)/filter_contigs --length 1000 - | \
+	  $(SRCDIR)/rename_contigs --prefix contigs_ - > $(CONTIGSDIR)/$$(basename $$f .fq.gz)/contigs.fna; \
+	  $(SRCDIR)/assembly_stats $(CONTIGSDIR)/$$(basename $$f .fq.gz)/contigs.fna $$(interleave_pairs $$(echo $$f|sed 's/_sequence/_1_sequence/g') $$(echo $$f|sed 's/_sequence/_2_sequence/g') | count_seqs | awk '{print $2}') > $(CONTIGSSTATSDIR)/$$(basename $$f .fq.gz).tsv;\
 	done
 
-masurca: $(MASURCADIR)
+masurca: $(MASURCADIR) $(CONTIGSDIR)
 	for f in $$(find $(TRIMDIR) -type f \( -name '*1_sequence.fq.gz' -o -name '*2_sequence.fq.gz' \)|sed 's/_[1-2]_sequence/_sequence/g'|sort|uniq -d); do \
 	  mkdir -p $(MASURCADIR)/$$(basename $$f .fq.gz); \
 	  echo -e "DATA\nPE= pe $(INSERTSIZEMEAN) $(INSERTSIZESTD) $$(echo $$f|sed 's/_sequence/_1_sequence/g') $$(echo $$f|sed 's/_sequence/_2_sequence/g')\nEND" > $(MASURCADIR)/$$(basename $$f .fq.gz)/config.txt; \
