@@ -10,7 +10,6 @@ INSERTSIZESTD = 59
 PROKKA = ~/nfs/marco/software/prokka-1.10/bin/prokka
 GENUS = Escherichia
 SPECIES = coli
-GRAM = -
 CENTRE = EMBL
 
 SRCDIR = $(CURDIR)/src
@@ -96,7 +95,7 @@ masurca: $(MASURCADIR) $(CONTIGSDIR) $(CONTIGSSTATSDIR)
 annotate: $(CONTIGSANNOTATIONDIR)
 	for f in $$(ls $(CONTIGSDIR)); do \
 	  gid=$$(grep $$(echo $$f | awk -F 'lane1' '{print $$2}' | awk -F '_' '{print $$1}') $(READSDIR)/samples.txt | awk '{print $$1}');\
-	  $(PROKKA) --outdir $(CONTIGSANNOTATIONDIR)/$$f --force --genus $(GENUS) --species $(SPECIES) --strain $$gid --gram $(GRAM) --centre $(CENTRE) --prefix $$gid --compliant --rfam --locustag $$gid $(CONTIGSDIR)/$$f/contigs.fna;\
+	  $(PROKKA) --outdir $(CONTIGSANNOTATIONDIR)/$$f --force --genus $(GENUS) --species $(SPECIES) --strain $$gid --centre $(CENTRE) --prefix $$gid --compliant --rfam --locustag $$gid $(CONTIGSDIR)/$$f/contigs.fna;\
 	done	  
 
 .PHONY: fastqc interleave spades masurca annotate
