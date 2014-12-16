@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 '''
-Outputs some statistics on contig sequences
+Outputs some statistics on annotated contigs
 '''
 
 __author__ = "Marco Galardini"
@@ -13,12 +13,12 @@ def get_options():
     import numpy as np
 
     # create the top-level parser
-    description = "Output some statistics from a contigs FASTA file"
+    description = "Output some statistics from a Prokka directory"
     parser = argparse.ArgumentParser(description = description,
-                                     prog = 'assembly_stats')
+                                     prog = 'annotation_stats')
 
-    parser.add_argument('contigs', action='store',
-                        help='Contigs FASTA file')
+    parser.add_argument('gbk', action='store',
+                        help='Annotated GenBank file')
     parser.add_argument('strain', action='store',
                         help='Strain ID')
     
@@ -71,9 +71,13 @@ if __name__ == "__main__":
                      'Largest contig',
                      'N50',
                      'GC',
-                     'Ns']))
+                     'Ns',
+                     'Proteins',
+                     'rRNA',
+                     'tRNA',
+                     'misc_RNA']))
 
-    seqs = {s for s in SeqIO.parse(options.contigs, 'fasta')}
+    seqs = {s for s in SeqIO.parse(options.gbk, 'genbank')}
 
     s1 = None
     for s in seqs:
@@ -87,6 +91,20 @@ if __name__ == "__main__":
     else:
         coverage = float(options.sequencing)/sum([len(s) for s in seqs])
 
+    cds = 0
+    tRNA = 0
+    rRNA = 0
+    misc_RNA = 0
+    for s in seqs:
+        cds += len(list(filter(lambda x: x.type == 'CDS',
+                              s.features)))
+        tRNA += len(list(filter(lambda x: x.type == 'tRNA',
+                              s.features)))
+        rRNA += len(list(filter(lambda x: x.type == 'rRNA',
+                              s.features)))
+        misc_RNA += len(list(filter(lambda x: x.type == 'misc_RNA',
+                              s.features)))
+
     print('\t'.join([str(x) for x in [options.strain,
                     options.sequencing,
                     coverage,
@@ -95,5 +113,6 @@ if __name__ == "__main__":
                     max({len(s) for s in seqs}),
                     N50([len(s) for s in seqs]),
                     GC(s1.seq),
-                    s1.seq.count('N')]]))
+                    s1.seq.count('N'),
+                    cds, rRNA, tRNA, misc_RNA]]))
     

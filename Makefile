@@ -68,7 +68,6 @@ spades: $(SPADESDIR) $(CONTIGSDIR) $(CONTIGSSTATSDIR)
 	  cat $(SPADESDIR)/$$(basename $$f .fq.gz)/contigs.fasta | \
 	  $(SRCDIR)/filter_contigs --length 1000 - | \
 	  $(SRCDIR)/rename_contigs --prefix contigs_ - > $(CONTIGSDIR)/$$(basename $$f .fq.gz)/contigs.fna; \
-	  $(SRCDIR)/assembly_stats $(CONTIGSDIR)/$$(basename $$f .fq.gz)/contigs.fna $$(grep $$(echo $$f | awk -F 'lane1' '{print $$2}' | awk -F '_' '{print $$1}') $(READSDIR)/samples.txt | awk '{print $$1}') --sequencing $$(interleave_pairs $$(echo $$f|sed 's/_sequence/_1_sequence/g') $$(echo $$f|sed 's/_sequence/_2_sequence/g') | count_seqs | awk '{print $$2}') > $(CONTIGSSTATSDIR)/$$(basename $$f .fq.gz).tsv;\
 	done
 
 masurca: $(MASURCADIR) $(CONTIGSDIR) $(CONTIGSSTATSDIR)
@@ -89,13 +88,13 @@ masurca: $(MASURCADIR) $(CONTIGSDIR) $(CONTIGSSTATSDIR)
 	  cat $(MASURCADIR)/$$(basename $$f .fq.gz)/CA/10-gapclose/genome.ctg.fasta | \
 	  $(SRCDIR)/filter_contigs --length 1000 - | \
 	  $(SRCDIR)/rename_contigs --prefix contigs_ - > $(CONTIGSDIR)/$$(basename $$f .fq.gz)/contigs.fna; \
-	  $(SRCDIR)/assembly_stats $(CONTIGSDIR)/$$(basename $$f .fq.gz)/contigs.fna $$(grep $$(echo $$f | awk -F 'lane1' '{print $$2}' | awk -F '_' '{print $$1}') $(READSDIR)/samples.txt | awk '{print $$1}') --sequencing $$(interleave_pairs $$(echo $$f|sed 's/_sequence/_1_sequence/g') $$(echo $$f|sed 's/_sequence/_2_sequence/g') | count_seqs | awk '{print $$2}') > $(CONTIGSSTATSDIR)/$$(basename $$f .fq.gz).tsv;\
 	done
  
 annotate: $(CONTIGSANNOTATIONDIR)
 	for f in $$(ls $(CONTIGSDIR)); do \
 	  gid=$$(grep $$(echo $$f | awk -F 'lane1' '{print $$2}' | awk -F '_' '{print $$1}') $(READSDIR)/samples.txt | awk '{print $$1}');\
 	  $(PROKKA) --outdir $(CONTIGSANNOTATIONDIR)/$$f --force --genus $(GENUS) --species $(SPECIES) --strain $$gid --centre $(CENTRE) --prefix $$gid --compliant --rfam --locustag $$gid $(CONTIGSDIR)/$$f/contigs.fna;\
+	  $(SRCDIR)/annotation_stats $(CONTIGSANNOTATIONDIR)/$$f/$$gid.gbk $$gid --sequencing $$(interleave_pairs $$(echo $$f|sed 's/_sequence/_1_sequence/g') $$(echo $$f|sed 's/_sequence/_2_sequence/g') | count_seqs | awk '{print $$2}') > $(CONTIGSSTATSDIR)/$$f.tsv;\
 	done	  
 
 .PHONY: fastqc interleave spades masurca annotate
