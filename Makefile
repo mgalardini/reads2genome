@@ -7,6 +7,11 @@ MASURCA = ~/nfs/marco/software/MaSuRCA-2.3.2/masurca
 MASURCATHREADS = 16
 INSERTSIZEMEAN = 390 
 INSERTSIZESTD = 59
+PROKKA = ~/nfs/marco/software/prokka-1.10/bin/prokka
+GENUS = Escherichia
+SPECIES = coli
+GRAM = -
+CENTRE = EMBL
 
 SRCDIR = $(CURDIR)/src
 
@@ -37,6 +42,10 @@ $(CONTIGSDIR):
 CONTIGSSTATSDIR = $(CURDIR)/contigs-stats
 $(CONTIGSSTATSDIR):
 	mkdir -p $(CONTIGSSTATSDIR)
+
+CONTIGSANNOTATIONDIR = $(CURDIR)/contigs-annotation
+$(CONTIGSANNOTATIONDIR):
+	mkdir -p $(CONTIGSANNOTATIONDIR)
 
 READS = $(shell find $(READSDIR) -name '*.txt.gz')
 
@@ -83,5 +92,11 @@ masurca: $(MASURCADIR) $(CONTIGSDIR) $(CONTIGSSTATSDIR)
 	  $(SRCDIR)/rename_contigs --prefix contigs_ - > $(CONTIGSDIR)/$$(basename $$f .fq.gz)/contigs.fna; \
 	  $(SRCDIR)/assembly_stats $(CONTIGSDIR)/$$(basename $$f .fq.gz)/contigs.fna $$(grep $$(echo $$f | awk -F 'lane1' '{print $$2}' | awk -F '_' '{print $$1}') $(READSDIR)/samples.txt | awk '{print $$1}') --sequencing $$(interleave_pairs $$(echo $$f|sed 's/_sequence/_1_sequence/g') $$(echo $$f|sed 's/_sequence/_2_sequence/g') | count_seqs | awk '{print $$2}') > $(CONTIGSSTATSDIR)/$$(basename $$f .fq.gz).tsv;\
 	done
-        
-.PHONY: fastqc interleave spades masurca
+ 
+annotate: $(CONTIGSANNOTATIONDIR)
+	for f in $$(ls $(CONTIGSDIR)); do \
+	  gid=$$(grep $$(echo $$f | awk -F 'lane1' '{print $$2}' | awk -F '_' '{print $$1}') $(READSDIR)/samples.txt | awk '{print $$1}');\
+	  $(PROKKA) --outdir $(CONTIGSANNOTATIONDIR)/$$f --force --genus $(GENUS) --species $(SPECIES) --strain $$gid --gram $(GRAM) --centre $(CENTRE) --prefix $$gid --compliant --rfam --locustag $$gid $(CONTIGSDIR)/$$f/contigs.fna;\
+	done	  
+
+.PHONY: fastqc interleave spades masurca annotate
