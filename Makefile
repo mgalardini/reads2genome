@@ -10,7 +10,6 @@ INSERTSIZESTD = 59
 PROKKA = ~/nfs/marco/software/prokka-1.10/bin/prokka
 GENUS = Escherichia
 SPECIES = coli
-CENTRE = EMBL
 
 SRCDIR = $(CURDIR)/src
 
@@ -93,7 +92,7 @@ masurca: $(MASURCADIR) $(CONTIGSDIR) $(CONTIGSSTATSDIR)
 annotate: $(CONTIGSANNOTATIONDIR)
 	for f in $$(ls $(CONTIGSDIR)); do \
 	  gid=$$(grep $$(echo $$f | awk -F 'lane1' '{print $$2}' | awk -F '_' '{print $$1}') $(READSDIR)/samples.txt | awk '{print $$1}');\
-	  $(PROKKA) --outdir $(CONTIGSANNOTATIONDIR)/$$f --force --genus $(GENUS) --species $(SPECIES) --strain $$gid --centre $(CENTRE) --prefix $$gid --compliant --rfam --locustag $$gid $(CONTIGSDIR)/$$f/contigs.fna;\
+	  $(PROKKA) --outdir $(CONTIGSANNOTATIONDIR)/$$f --force --genus $(GENUS) --species $(SPECIES) --strain $$gid --prefix $$gid --compliant --rfam --locustag $$gid $(CONTIGSDIR)/$$f/contigs.fna;\
 	  $(SRCDIR)/annotation_stats $(CONTIGSANNOTATIONDIR)/$$f/$$gid.gbk $$gid --sequencing $$(interleave_pairs $(TRIMDIR)/$$(echo $$f|sed 's/_sequence/_1_sequence/g').fq.gz $(TRIMDIR)/$$(echo $$f|sed 's/_sequence/_2_sequence/g').fq.gz | count_seqs | awk '{print $$2}') > $(CONTIGSSTATSDIR)/$$f.tsv;\
 	done	  
 
