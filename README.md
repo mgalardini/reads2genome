@@ -17,6 +17,16 @@ Notes
 * You may want to run `make fastqc` first and use its results to tweak the trimming parameters
 * More than one genome can be assembled in this directory, by changing the strain and reads name at the top of the Makefile
 
+Prerequisites
+-------------
+
+* Python + Biopython + numpy
+* FastQC
+* seq_crumbs
+* Spades
+* MasurCA
+* prokka
+
 Copyright
 ---------
 
