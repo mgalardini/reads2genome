@@ -1,16 +1,27 @@
-FASTQC = ../FastQC/fastqc 
+# Organism details
+GENUS = Escherichia
+SPECIES = coli
+STRAIN = k12
+
+# Input files
+READ1 = READ1.txt.gz
+READ2 = READ2.txt.gz
+
+# Directories and parameters
+FASTQC = FastQC/fastqc 
 READSDIR = ../2014-12-03-H15DLBGXX 
-SPADES = ~/nfs/marco/software/SPAdes-3.1.1-Linux/bin/spades.py
+SPADES = SPAdes-3.1.1-Linux/bin/spades.py
 SPADESTHREADS = 16
 SPADESKMERS = 21,33,55,77,99,127
-MASURCA = ~/nfs/marco/software/MaSuRCA-2.3.2/masurca
+MASURCA = MaSuRCA-2.3.2/masurca
 MASURCATHREADS = 16
 INSERTSIZEMEAN = 390 
 INSERTSIZESTD = 59
-PROKKA = ~/nfs/marco/software/prokka-1.10/bin/prokka
-GENUS = Escherichia
-SPECIES = coli
+PROKKA = prokka-1.10/bin/prokka
 
+# Anything below this point should be changed
+
+# Directories
 SRCDIR = $(CURDIR)/src
 
 QCDIR = $(CURDIR)/QC
@@ -45,55 +56,71 @@ CONTIGSANNOTATIONDIR = $(CURDIR)/contigs-annotation
 $(CONTIGSANNOTATIONDIR):
 	mkdir -p $(CONTIGSANNOTATIONDIR)
 
-READS = $(shell find $(READSDIR) -name '*.txt.gz')
+# QC
+QCREAD1 = $(addsuffix _fastqc.zip, $(basename $(notdir $(READ1))))
+QCREAD2 = $(addsuffix _fastqc.zip, $(basename $(notdir $(READ2))))
 
-fastqc: $(QCDIR)
-	for read in $$(find $(READSDIR) -name '*.txt.gz'); do \
-	  $(FASTQC) --outdir $(QCDIR) $$read; \
-	done
+$(QCREAD1): $(QCDIR) $(READ1)
+	$(FASTQC) --outdir $(QCDIR) $(READ1)
+$(QCREAD2): $(QCDIR) $(READ2)
+	$(FASTQC) --outdir $(QCDIR) $(READ2)
+fastqc: $(QCREAD1) $(QCREAD2)
 
-trim: $(TRIMDIR)
-	for f in $$(find $(READSDIR) -type f \( -name '*1_sequence.txt.gz' -o -name '*2_sequence.txt.gz' \)|sed 's/_[1-2]_sequence/_sequence/g'|sort|uniq -d); do \
-	  interleave_pairs $$(echo $$f|sed 's/_sequence/_1_sequence/g') $$(echo $$f|sed 's/_sequence/_2_sequence/g') | \
-	  trim_edges -l 9 --paired_reads | \
-	  trim_quality -q 20 -w 5 --paired_reads | \
-	  deinterleave_pairs -z -o $(TRIMDIR)/$$(basename $$f|sed 's/_sequence.txt.gz/_1_sequence.fq.gz/g') $(TRIMDIR)/$$(basename $$f|sed 's/_sequence.txt.gz/_2_sequence.fq.gz/g'); \
-	done
+# Trimming
+TREAD1 = $(addsuffix .fq.gz, $(TRIMDIR)/$(basename $(notdir $(READ1)) .txt))
+TREAD2 = $(addsuffix .fq.gz, $(TRIMDIR)/$(basename $(notdir $(READ2)) .txt))
 
-spades: $(SPADESDIR) $(CONTIGSDIR) $(CONTIGSSTATSDIR)
-	for f in $$(find $(TRIMDIR) -type f \( -name '*1_sequence.fq.gz' -o -name '*2_sequence.fq.gz' \)|sed 's/_[1-2]_sequence/_sequence/g'|sort|uniq -d); do \
-	  $(SPADES) -k $(SPADESKMERS) --only-assembler --careful -t $(SPADESTHREADS) -1 $$(echo $$f|sed 's/_sequence/_1_sequence/g') -2 $$(echo $$f|sed 's/_sequence/_2_sequence/g') -o $(SPADESDIR)/$$(basename $$f .fq.gz); \
-	  mkdir -p $(CONTIGSDIR)/$$(basename $$f .fq.gz); \
-	  cat $(SPADESDIR)/$$(basename $$f .fq.gz)/contigs.fasta | \
-	  $(SRCDIR)/filter_contigs --length 1000 - | \
-	  $(SRCDIR)/rename_contigs --prefix contigs_ - > $(CONTIGSDIR)/$$(basename $$f .fq.gz)/contigs.fna; \
-	done
+$(TREAD1): $(TRIMDIR) $(READ1) $(READ2)
+	interleave_pairs $(READ1) $(READ2) | \
+	trim_edges -l 9 --paired_reads | \
+	trim_quality -q 20 -w 5 --paired_reads | \
+	deinterleave_pairs -z -o $(TREAD1) $(TREAD2)
+trim: $(TREAD1)
 
-masurca: $(MASURCADIR) $(CONTIGSDIR) $(CONTIGSSTATSDIR)
-	for f in $$(find $(TRIMDIR) -type f \( -name '*1_sequence.fq.gz' -o -name '*2_sequence.fq.gz' \)|sed 's/_[1-2]_sequence/_sequence/g'|sort|uniq -d); do \
-	  mkdir -p $(MASURCADIR)/$$(basename $$f .fq.gz); \
-	  echo -e "DATA\nPE= pe $(INSERTSIZEMEAN) $(INSERTSIZESTD) $$(echo $$f|sed 's/_sequence/_1_sequence/g') $$(echo $$f|sed 's/_sequence/_2_sequence/g')\nEND" > $(MASURCADIR)/$$(basename $$f .fq.gz)/config.txt; \
-	  echo -e "PARAMETERS\nGRAPH_KMER_SIZE = auto\nUSE_LINKING_MATES = 1\nCA_PARAMETERS = cgwErrorRate=0.25 ovlMemory=4GB\nKMER_COUNT_THRESHOLD = 2" >> $(MASURCADIR)/$$(basename $$f .fq.gz)/config.txt; \
-	  echo -e "NUM_THREADS = $(MASURCATHREADS)\nJF_SIZE = 2000000000\nEND" >> $(MASURCADIR)/$$(basename $$f .fq.gz)/config.txt; \
-	done
-	for f in $$(find $(TRIMDIR) -type f \( -name '*1_sequence.fq.gz' -o -name '*2_sequence.fq.gz' \)|sed 's/_[1-2]_sequence/_sequence/g'|sort|uniq -d); do \
-	  cd $(MASURCADIR)/$$(basename $$f .fq.gz); \
-	  $(MASURCA) config.txt; \
-	  bash assemble.sh; \
-	  cd $(CURDIR); \
-	done
-	for f in $$(find $(TRIMDIR) -type f \( -name '*1_sequence.fq.gz' -o -name '*2_sequence.fq.gz' \)|sed 's/_[1-2]_sequence/_sequence/g'|sort|uniq -d); do \
-	  mkdir -p $(CONTIGSDIR)/$$(basename $$f .fq.gz); \
-	  cat $(MASURCADIR)/$$(basename $$f .fq.gz)/CA/10-gapclose/genome.ctg.fasta | \
-	  $(SRCDIR)/filter_contigs --length 1000 - | \
-	  $(SRCDIR)/rename_contigs --prefix contigs_ - > $(CONTIGSDIR)/$$(basename $$f .fq.gz)/contigs.fna; \
-	done
+# Assembly
+CONTIGS = $(CONTIGSDIR)/$(STRAIN)/contigs.fna
+
+$(CONTIGS): $(SPADESDIR) $(CONTIGSDIR) $(CONTIGSSTATSDIR) $(TREAD1)
+	$(SPADES) -k $(SPADESKMERS) --only-assembler --careful -t $(SPADESTHREADS) -1 $(TREAD1) -2 $(TREAD2) -o $(SPADESDIR)/$(STRAIN)
+	mkdir -p $(CONTIGSDIR)/$(STRAIN)
+	cat $(SPADESDIR)/$(STRAIN)/contigs.fasta | \
+	$(SRCDIR)/filter_contigs --length 1000 - | \
+	$(SRCDIR)/rename_contigs --prefix contigs_ - > $(CONTIGS)
+spades: $(CONTIGS)
+
+CONTIGSMASURCA = $(CONTIGSDIR)/$(STRAIN)/contigs.masurca.fna
+
+$(CONTIGSMASURCA): $(MASURCADIR) $(CONTIGSDIR) $(CONTIGSSTATSDIR) $(TREAD1)
+	mkdir -p $(MASURCADIR)/$(STRAIN) 
+	echo -e "DATA\nPE= pe $(INSERTSIZEMEAN) $(INSERTSIZESTD) $(TREAD1) $(TREAD2)\nEND" > $(MASURCADIR)/$(STRAIN)/config.txt
+	echo -e "PARAMETERS\nGRAPH_KMER_SIZE = auto\nUSE_LINKING_MATES = 1\nCA_PARAMETERS = cgwErrorRate=0.25 ovlMemory=4GB\nKMER_COUNT_THRESHOLD = 2" >> $(MASURCADIR)/$(SRAIN)/config.txt
+	echo -e "NUM_THREADS = $(MASURCATHREADS)\nJF_SIZE = 2000000000\nEND" >> $(MASURCADIR)/$(STRAIN)/config.txt
+	cd $(MASURCADIR)/$(STRAIN); \
+	$(MASURCA) config.txt; \
+	bash assemble.sh; \
+	cd $(CURDIR)
+	mkdir -p $(CONTIGSDIR)/$(STRAIN)
+	cat $(MASURCADIR)/$(STRAIN)/CA/10-gapclose/genome.ctg.fasta | \
+	$(SRCDIR)/filter_contigs --length 1000 - | \
+	$(SRCDIR)/rename_contigs --prefix contigs_ - > $(CONTIGS)
+masurca: $(CONTIGSMASURCA)
  
-annotate: $(CONTIGSANNOTATIONDIR)
-	for f in $$(ls $(CONTIGSDIR)); do \
-	  gid=$$(grep $$(echo $$f | awk -F 'lane1' '{print $$2}' | awk -F '_' '{print $$1}') $(READSDIR)/samples.txt | awk '{print $$1}');\
-	  $(PROKKA) --outdir $(CONTIGSANNOTATIONDIR)/$$f --force --genus $(GENUS) --species $(SPECIES) --strain $$gid --prefix $$gid --compliant --rfam --locustag $$gid $(CONTIGSDIR)/$$f/contigs.fna;\
-	  $(SRCDIR)/annotation_stats $(CONTIGSANNOTATIONDIR)/$$f/$$gid.gbk $$gid --sequencing $$(interleave_pairs $(TRIMDIR)/$$(echo $$f|sed 's/_sequence/_1_sequence/g').fq.gz $(TRIMDIR)/$$(echo $$f|sed 's/_sequence/_2_sequence/g').fq.gz | count_seqs | awk '{print $$2}') > $(CONTIGSSTATSDIR)/$$f.tsv;\
-	done	  
+# Annotate
+GBK = $(CONTIGSANNOTATIONDIR)/$(STRAIN)/$(STRAIN).gbk
 
-.PHONY: fastqc interleave spades masurca annotate
+$(GBK): $(CONTIGSANNOTATIONDIR) $(CONTIGS) $(TREAD1)
+	$(PROKKA) --outdir $(CONTIGSANNOTATIONDIR)/$(STRAIN) --force --genus $(GENUS) --species $(SPECIES) --strain $(STRAIN) --prefix $(STRAIN) --compliant --rfam --locustag $(STRAIN) $(CONTIGS)
+	$(SRCDIR)/annotation_stats $(GBK) $(STRAIN) --sequencing $$(interleave_pairs $(TREAD1) $(TREAD2) | count_seqs | awk '{print $$2}') > $(CONTIGSSTATSDIR)/$(STRAIN).tsv
+annotate: $(GBK)
+
+GBKMASURCA = $(CONTIGSANNOTATIONDIR)/$(STRAIN)/$(STRAIN).masurca.gbk
+
+$(GBKMASURCA): $(CONTIGSANNOTATIONDIR) $(CONTIGSMASURCA) $(TREAD1)
+	$(PROKKA) --outdir $(CONTIGSANNOTATIONDIR)/$(STRAIN) --force --genus $(GENUS) --species $(SPECIES) --strain $(STRAIN) --prefix $(STRAIN) --compliant --rfam --locustag $(STRAIN) $(CONTIGS)
+	$(SRCDIR)/annotation_stats $(GBK) $(STRAIN) --sequencing $$(interleave_pairs $(TREAD1) $(TREAD2) | count_seqs | awk '{print $$2}') > $(CONTIGSSTATSDIR)/$(STRAIN).tsv
+annotatemasurca: $(GBKMASURCA)
+
+all: fastqc trim spades annotate
+allmasurca: fastqc trim masurca annotatemasurca
+
+.PHONY: all allmasurca fastqc trim spades masurca annotate annotatemasurca
