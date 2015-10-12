@@ -8,15 +8,15 @@ READ1 = READ1.txt.gz
 READ2 = READ2.txt.gz
 
 # Directories and parameters
-FASTQC = FastQC/fastqc 
-SPADES = SPAdes-3.1.1-Linux/bin/spades.py
+FASTQC = $(SOFTDIR)FastQC/fastqc 
+SPADES = $(SFOTDIR)SPAdes-3.1.1-Linux/bin/spades.py
 SPADESTHREADS = 16
 SPADESKMERS = 21,33,55,77,99,127
-MASURCA = MaSuRCA-2.3.2/masurca
+MASURCA = $(SOFTDIR)MaSuRCA-2.3.2/masurca
 MASURCATHREADS = 16
 INSERTSIZEMEAN = 390 
 INSERTSIZESTD = 59
-PROKKA = prokka-1.10/bin/prokka
+PROKKA = $(SOFTDIR)prokka-1.10/bin/prokka
 
 # Anything below this point should be changed
 
