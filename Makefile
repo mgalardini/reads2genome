@@ -9,7 +9,7 @@ READ2 = READ2.txt.gz
 
 # Directories and parameters
 FASTQC = $(SOFTDIR)FastQC/fastqc 
-SPADES = $(SFOTDIR)SPAdes-3.1.1-Linux/bin/spades.py
+SPADES = $(SOFTDIR)SPAdes-3.1.1-Linux/bin/spades.py
 SPADESTHREADS = 16
 SPADESKMERS = 21,33,55,77,99,127
 MASURCA = $(SOFTDIR)MaSuRCA-2.3.2/masurca
