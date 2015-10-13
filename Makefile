@@ -56,8 +56,8 @@ $(CONTIGSANNOTATIONDIR):
 	mkdir -p $(CONTIGSANNOTATIONDIR)
 
 # QC
-QCREAD1 = $(QCDIR)/$(addsuffix _fastqc.zip, $(basename $(notdir $(READ1))))
-QCREAD2 = $(QCDIR)/$(addsuffix _fastqc.zip, $(basename $(notdir $(READ2))))
+QCREAD1 = $(QCDIR)/$(addsuffix _fastqc.zip, $(basename $(notdir $(READ1)) .txt))
+QCREAD2 = $(QCDIR)/$(addsuffix _fastqc.zip, $(basename $(notdir $(READ2)) .txt))
 
 $(QCREAD1): $(QCDIR) $(READ1)
 	$(FASTQC) --outdir $(QCDIR) $(READ1)
