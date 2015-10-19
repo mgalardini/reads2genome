@@ -101,7 +101,7 @@ $(CONTIGSMASURCA): $(MASURCADIR) $(CONTIGSDIR) $(CONTIGSSTATSDIR) $(TREAD1)
 	mkdir -p $(CONTIGSDIR)/$(STRAIN)
 	cat $(MASURCADIR)/$(STRAIN)/CA/10-gapclose/genome.ctg.fasta | \
 	$(SRCDIR)/filter_contigs --length 1000 - | \
-	$(SRCDIR)/rename_contigs --prefix contigs_ - > $(CONTIGS)
+	$(SRCDIR)/rename_contigs --prefix contigs_ - > $(CONTIGSMASURCA)
 masurca: $(CONTIGSMASURCA)
  
 # Annotate
@@ -112,11 +112,11 @@ $(GBK): $(CONTIGSANNOTATIONDIR) $(CONTIGS) $(TREAD1)
 	$(SRCDIR)/annotation_stats $(GBK) $(STRAIN) --sequencing $$(interleave_pairs $(TREAD1) $(TREAD2) | count_seqs | awk '{print $$2}') > $(CONTIGSSTATSDIR)/$(STRAIN).tsv
 annotate: $(GBK)
 
-GBKMASURCA = $(CONTIGSANNOTATIONDIR)/$(STRAIN)/$(STRAIN).masurca.gbk
+GBKMASURCA = $(CONTIGSANNOTATIONDIR)/$(STRAIN).masurca/$(STRAIN).gbk
 
 $(GBKMASURCA): $(CONTIGSANNOTATIONDIR) $(CONTIGSMASURCA) $(TREAD1)
-	$(PROKKA) --outdir $(CONTIGSANNOTATIONDIR)/$(STRAIN) --force --genus $(GENUS) --species $(SPECIES) --strain $(STRAIN) --prefix $(STRAIN) --compliant --rfam --locustag $(STRAIN) $(CONTIGS)
-	$(SRCDIR)/annotation_stats $(GBK) $(STRAIN) --sequencing $$(interleave_pairs $(TREAD1) $(TREAD2) | count_seqs | awk '{print $$2}') > $(CONTIGSSTATSDIR)/$(STRAIN).tsv
+	$(PROKKA) --outdir $(CONTIGSANNOTATIONDIR)/$(STRAIN).masurca --force --genus $(GENUS) --species $(SPECIES) --strain $(STRAIN) --prefix $(STRAIN) --compliant --rfam --locustag $(STRAIN) $(CONTIGSMASURCA)
+	$(SRCDIR)/annotation_stats $(GBKMASURCA) $(STRAIN) --sequencing $$(interleave_pairs $(TREAD1) $(TREAD2) | count_seqs | awk '{print $$2}') > $(CONTIGSSTATSDIR)/$(STRAIN).masurca.tsv
 annotatemasurca: $(GBKMASURCA)
 
 all: fastqc trim spades annotate
