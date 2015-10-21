@@ -17,6 +17,7 @@ MASURCATHREADS = 16
 INSERTSIZEMEAN = 390 
 INSERTSIZESTD = 59
 PROKKA = $(SOFTDIR)prokka-1.10/bin/prokka
+PROKKATHREADS = 16
 
 # Anything below this point should be changed
 
@@ -108,14 +109,14 @@ masurca: $(CONTIGSMASURCA)
 GBK = $(CONTIGSANNOTATIONDIR)/$(STRAIN)/$(STRAIN).gbk
 
 $(GBK): $(CONTIGSANNOTATIONDIR) $(CONTIGS) $(TREAD1)
-	$(PROKKA) --outdir $(CONTIGSANNOTATIONDIR)/$(STRAIN) --force --genus $(GENUS) --species $(SPECIES) --strain $(STRAIN) --prefix $(STRAIN) --compliant --rfam --locustag $(STRAIN) $(CONTIGS)
+	$(PROKKA) --cpus $(PROKKATHREADS) --outdir $(CONTIGSANNOTATIONDIR)/$(STRAIN) --force --genus $(GENUS) --species $(SPECIES) --strain $(STRAIN) --prefix $(STRAIN) --compliant --rfam --locustag $(STRAIN) $(CONTIGS)
 	$(SRCDIR)/annotation_stats $(GBK) $(STRAIN) --sequencing $$(interleave_pairs $(TREAD1) $(TREAD2) | count_seqs | awk '{print $$2}') > $(CONTIGSSTATSDIR)/$(STRAIN).tsv
 annotate: $(GBK)
 
 GBKMASURCA = $(CONTIGSANNOTATIONDIR)/$(STRAIN).masurca/$(STRAIN).gbk
 
 $(GBKMASURCA): $(CONTIGSANNOTATIONDIR) $(CONTIGSMASURCA) $(TREAD1)
-	$(PROKKA) --outdir $(CONTIGSANNOTATIONDIR)/$(STRAIN).masurca --force --genus $(GENUS) --species $(SPECIES) --strain $(STRAIN) --prefix $(STRAIN) --compliant --rfam --locustag $(STRAIN) $(CONTIGSMASURCA)
+	$(PROKKA) --cpus $(PROKKATHREADS) --outdir $(CONTIGSANNOTATIONDIR)/$(STRAIN).masurca --force --genus $(GENUS) --species $(SPECIES) --strain $(STRAIN) --prefix $(STRAIN) --compliant --rfam --locustag $(STRAIN) $(CONTIGSMASURCA)
 	$(SRCDIR)/annotation_stats $(GBKMASURCA) $(STRAIN) --sequencing $$(interleave_pairs $(TREAD1) $(TREAD2) | count_seqs | awk '{print $$2}') > $(CONTIGSSTATSDIR)/$(STRAIN).masurca.tsv
 annotatemasurca: $(GBKMASURCA)
 
