@@ -84,7 +84,7 @@ $(CONTIGS): $(SPADESDIR) $(CONTIGSDIR) $(CONTIGSSTATSDIR) $(READ1) $(READ2)
 	$(SPADES) -k $(SPADESKMERS) --only-assembler --careful -t $(SPADESTHREADS) -1 $(READ1) -2 $(READ2) -o $(SPADESDIR)/$(STRAIN)
 	mkdir -p $(CONTIGSDIR)/$(STRAIN)
 	cat $(SPADESDIR)/$(STRAIN)/contigs.fasta | \
-	$(SRCDIR)/filter_contigs --length 1000 - | \
+	$(SRCDIR)/filter_contigs --length 200 - | \
 	$(SRCDIR)/rename_contigs --prefix contigs_ - > $(CONTIGS)
 spades: $(CONTIGS)
 
@@ -101,7 +101,7 @@ $(CONTIGSMASURCA): $(MASURCADIR) $(CONTIGSDIR) $(CONTIGSSTATSDIR) $(READ1) $(REA
 	cd $(CURDIR)
 	mkdir -p $(CONTIGSDIR)/$(STRAIN)
 	cat $(MASURCADIR)/$(STRAIN)/CA/10-gapclose/genome.ctg.fasta | \
-	$(SRCDIR)/filter_contigs --length 1000 - | \
+	$(SRCDIR)/filter_contigs --length 200 - | \
 	$(SRCDIR)/rename_contigs --prefix contigs_ - > $(CONTIGSMASURCA)
 masurca: $(CONTIGSMASURCA)
  
