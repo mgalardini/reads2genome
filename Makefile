@@ -80,8 +80,8 @@ trim: $(TREAD1)
 # Assembly
 CONTIGS = $(CONTIGSDIR)/$(STRAIN)/contigs.fna
 
-$(CONTIGS): $(SPADESDIR) $(CONTIGSDIR) $(CONTIGSSTATSDIR) $(TREAD1)
-	$(SPADES) -k $(SPADESKMERS) --only-assembler --careful -t $(SPADESTHREADS) -1 $(TREAD1) -2 $(TREAD2) -o $(SPADESDIR)/$(STRAIN)
+$(CONTIGS): $(SPADESDIR) $(CONTIGSDIR) $(CONTIGSSTATSDIR) $(READ1) $(READ2)
+	$(SPADES) -k $(SPADESKMERS) --only-assembler --careful -t $(SPADESTHREADS) -1 $(READ1) -2 $(READ2) -o $(SPADESDIR)/$(STRAIN)
 	mkdir -p $(CONTIGSDIR)/$(STRAIN)
 	cat $(SPADESDIR)/$(STRAIN)/contigs.fasta | \
 	$(SRCDIR)/filter_contigs --length 1000 - | \
@@ -90,9 +90,9 @@ spades: $(CONTIGS)
 
 CONTIGSMASURCA = $(CONTIGSDIR)/$(STRAIN)/contigs.masurca.fna
 
-$(CONTIGSMASURCA): $(MASURCADIR) $(CONTIGSDIR) $(CONTIGSSTATSDIR) $(TREAD1)
+$(CONTIGSMASURCA): $(MASURCADIR) $(CONTIGSDIR) $(CONTIGSSTATSDIR) $(READ1) $(READ2)
 	mkdir -p $(MASURCADIR)/$(STRAIN) 
-	echo -e "DATA\nPE= pe $(INSERTSIZEMEAN) $(INSERTSIZESTD) $(TREAD1) $(TREAD2)\nEND" > $(MASURCADIR)/$(STRAIN)/config.txt
+	echo -e "DATA\nPE= pe $(INSERTSIZEMEAN) $(INSERTSIZESTD) $(READ1) $(READ2)\nEND" > $(MASURCADIR)/$(STRAIN)/config.txt
 	echo -e "PARAMETERS\nGRAPH_KMER_SIZE = auto\nUSE_LINKING_MATES = 1\nCA_PARAMETERS = cgwErrorRate=0.25 ovlMemory=4GB\nKMER_COUNT_THRESHOLD = 2" >> $(MASURCADIR)/$(STRAIN)/config.txt
 	echo -e "NUM_THREADS = $(MASURCATHREADS)\nJF_SIZE = 2000000000\nEND" >> $(MASURCADIR)/$(STRAIN)/config.txt
 	cd $(MASURCADIR)/$(STRAIN); \
@@ -108,16 +108,16 @@ masurca: $(CONTIGSMASURCA)
 # Annotate
 GBK = $(CONTIGSANNOTATIONDIR)/$(STRAIN)/$(STRAIN).gbk
 
-$(GBK): $(CONTIGSANNOTATIONDIR) $(CONTIGS) $(TREAD1)
+$(GBK): $(CONTIGSANNOTATIONDIR) $(CONTIGS) $(READ1) $(READ2)
 	$(PROKKA) --cpus $(PROKKATHREADS) --outdir $(CONTIGSANNOTATIONDIR)/$(STRAIN) --force --genus $(GENUS) --species $(SPECIES) --strain $(STRAIN) --prefix $(STRAIN) --compliant --rfam --locustag $(STRAIN) $(CONTIGS)
-	$(SRCDIR)/annotation_stats $(GBK) $(STRAIN) --sequencing $$(interleave_pairs $(TREAD1) $(TREAD2) | count_seqs | awk '{print $$2}') > $(CONTIGSSTATSDIR)/$(STRAIN).tsv
+	$(SRCDIR)/annotation_stats $(GBK) $(STRAIN) --sequencing $$(interleave_pairs $(READ1) $(READ2) | count_seqs | awk '{print $$2}') > $(CONTIGSSTATSDIR)/$(STRAIN).tsv
 annotate: $(GBK)
 
 GBKMASURCA = $(CONTIGSANNOTATIONDIR)/$(STRAIN).masurca/$(STRAIN).gbk
 
-$(GBKMASURCA): $(CONTIGSANNOTATIONDIR) $(CONTIGSMASURCA) $(TREAD1)
+$(GBKMASURCA): $(CONTIGSANNOTATIONDIR) $(CONTIGSMASURCA) $(READ1) $(READ2)
 	$(PROKKA) --cpus $(PROKKATHREADS) --outdir $(CONTIGSANNOTATIONDIR)/$(STRAIN).masurca --force --genus $(GENUS) --species $(SPECIES) --strain $(STRAIN) --prefix $(STRAIN) --compliant --rfam --locustag $(STRAIN) $(CONTIGSMASURCA)
-	$(SRCDIR)/annotation_stats $(GBKMASURCA) $(STRAIN) --sequencing $$(interleave_pairs $(TREAD1) $(TREAD2) | count_seqs | awk '{print $$2}') > $(CONTIGSSTATSDIR)/$(STRAIN).masurca.tsv
+	$(SRCDIR)/annotation_stats $(GBKMASURCA) $(STRAIN) --sequencing $$(interleave_pairs $(READ1) $(READ2) | count_seqs | awk '{print $$2}') > $(CONTIGSSTATSDIR)/$(STRAIN).masurca.tsv
 annotatemasurca: $(GBKMASURCA)
 
 all: fastqc trim spades annotate
